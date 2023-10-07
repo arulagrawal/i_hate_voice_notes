@@ -3,22 +3,25 @@ const express = require("express");
 const body_parser = require("body-parser");
 const axios = require("axios").default;
 const FormData = require('form-data');
-const fs = require('fs');
 
-const token = process.env.WHATSAPP_TOKEN;
+const whatsapp_token = process.env.WHATSAPP_TOKEN;
 const openai_token = process.env.OPENAI_API_KEY;
+const verify_token = process.env.VERIFY_TOKEN;
+
 const app = express().use(body_parser.json());
 
 app.listen(process.env.PORT || 1337, () => console.log("webhook is listening"));
 
 const getAudioUrl = async (audio_id) => {
-  const response = await axios.get(`https://graph.facebook.com/v13.0/${audio_id}?access_token=${token}`);
+  const response = await axios.get(`https://graph.facebook.com/v13.0/${audio_id}`, {
+    headers: { "Authorization": `Bearer ${whatsapp_token}` },
+  });
   return response.data.url;
 };
 
 const downloadAudio = async (audio_url) => {
   const response = await axios.get(audio_url, {
-    headers: { "Authorization": `Bearer ${token}` },
+    headers: { "Authorization": `Bearer ${whatsapp_token}` },
     responseType: 'arraybuffer' // change this from 'stream'
   });
 
@@ -48,7 +51,7 @@ const transcribeAudio = async (audio_buffer) => {
 
 const sendMessage = async (phone_number_id, from, text) => {
   const response = await axios.post(
-    `https://graph.facebook.com/v12.0/${phone_number_id}/messages?access_token=${token}`,
+    `https://graph.facebook.com/v12.0/${phone_number_id}/messages?access_token=${whatsapp_token}`,
     {
       messaging_product: "whatsapp",
       to: from,
@@ -72,7 +75,7 @@ const markAsRead = async (phone_number_id, message_id) => {
     {
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`,
+        "Authorization": `Bearer ${whatsapp_token}`,
       },
     }
   );
@@ -112,7 +115,6 @@ app.post("/webhook", async (req, res) => {
 });
 
 app.get("/webhook", (req, res) => {
-  const verify_token = process.env.VERIFY_TOKEN;
 
   let mode = req.query["hub.mode"];
   let token = req.query["hub.verify_token"];
