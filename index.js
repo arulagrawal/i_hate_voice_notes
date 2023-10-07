@@ -19,27 +19,27 @@ const getAudioUrl = async (audio_id) => {
 const downloadAudio = async (audio_url) => {
   const response = await axios.get(audio_url, {
     headers: { "Authorization": `Bearer ${token}` },
-    responseType: 'stream',
+    responseType: 'arraybuffer' // change this from 'stream'
   });
-  const filePath = 'audio.ogg';
-  const writer = fs.createWriteStream(filePath);
-  response.data.pipe(writer);
-  
-  return new Promise((resolve, reject) => {
-    writer.on('finish', resolve);
-    writer.on('error', reject);
-  });
+
+  return Buffer.from(response.data, 'binary'); // This is now a Buffer, not a promise
 };
 
-const transcribeAudio = async (filePath) => {
+const transcribeAudio = async (audio_buffer) => {
   const form = new FormData();
-  form.append('file', fs.createReadStream(filePath));
+
+  form.append('file', audio_buffer, { // Pass the buffer directly and add additional info for the form
+    contentType: 'audio/ogg', // This may vary based on the audio file type
+    name: 'file',
+    filename: 'audio.ogg',
+  });
+
   form.append('model', 'whisper-1');
-  
+
   const response = await axios.post('https://api.openai.com/v1/audio/transcriptions', form, {
     headers: {
       'Authorization': `Bearer ${openai_token}`,
-      'Content-Type': 'multipart/form-data',
+      ...form.getHeaders(), // Spread the form headers (important for boundary and content-length)
     },
   });
 
@@ -70,7 +70,7 @@ const markAsRead = async (phone_number_id, message_id) => {
       message_id: message_id,
     },
     {
-      headers: { 
+      headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`,
       },
@@ -80,35 +80,35 @@ const markAsRead = async (phone_number_id, message_id) => {
 
 
 app.post("/webhook", async (req, res) => {
-    try {
-        if (!req.body || !req.body.object) return res.sendStatus(404);
+  try {
+    if (!req.body || !req.body.object) return res.sendStatus(404);
 
-        const entry = req.body.entry;
-        const changes = entry && entry[0] && entry[0].changes;
-        const value = changes && changes[0] && changes[0].value;
-        const messages = value && value.messages && value.messages[0];
-        if (messages) {
-            const metadata = value.metadata;
-            const phone_number_id = metadata && metadata.phone_number_id;
-            const from = messages.from;
-            const audio = messages.audio;
-            const audio_id = audio && audio.id;
+    const entry = req.body.entry;
+    const changes = entry && entry[0] && entry[0].changes;
+    const value = changes && changes[0] && changes[0].value;
+    const messages = value && value.messages && value.messages[0];
+    if (messages) {
+      const metadata = value.metadata;
+      const phone_number_id = metadata && metadata.phone_number_id;
+      const from = messages.from;
+      const audio = messages.audio;
+      const audio_id = audio && audio.id;
 
-            if(phone_number_id && from && audio_id) {
-                await markAsRead(phone_number_id, messages.id);
-              
-                const audio_url = await getAudioUrl(audio_id);
-                await downloadAudio(audio_url);
+      if (phone_number_id && from && audio_id) {
+        await markAsRead(phone_number_id, messages.id);
 
-                const transcription = await transcribeAudio('audio.ogg');
-                await sendMessage(phone_number_id, from, transcription);
-            }
-        }
-        res.sendStatus(200);
-    } catch (error) {
-        console.error("An error occurred:", error);
-        res.sendStatus(500);
+        const audio_url = await getAudioUrl(audio_id);
+        const audio = await downloadAudio(audio_url);
+
+        const transcription = await transcribeAudio(audio);
+        await sendMessage(phone_number_id, from, transcription);
+      }
     }
+    res.sendStatus(200);
+  } catch (error) {
+    console.error("An error occurred:", error);
+    res.sendStatus(500);
+  }
 });
 
 app.get("/webhook", (req, res) => {
