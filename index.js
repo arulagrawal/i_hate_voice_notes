@@ -24,7 +24,7 @@ const downloadAudio = async (audio_url) => {
   const filePath = 'audio.ogg';
   const writer = fs.createWriteStream(filePath);
   response.data.pipe(writer);
-
+  
   return new Promise((resolve, reject) => {
     writer.on('finish', resolve);
     writer.on('error', reject);
@@ -35,7 +35,7 @@ const transcribeAudio = async (filePath) => {
   const form = new FormData();
   form.append('file', fs.createReadStream(filePath));
   form.append('model', 'whisper-1');
-
+  
   const response = await axios.post('https://api.openai.com/v1/audio/transcriptions', form, {
     headers: {
       'Authorization': `Bearer ${openai_token}`,
@@ -47,7 +47,7 @@ const transcribeAudio = async (filePath) => {
 };
 
 const sendMessage = async (phone_number_id, from, text) => {
-  await axios.post(
+  const response = await axios.post(
     `https://graph.facebook.com/v12.0/${phone_number_id}/messages?access_token=${token}`,
     {
       messaging_product: "whatsapp",
@@ -58,7 +58,26 @@ const sendMessage = async (phone_number_id, from, text) => {
       headers: { "Content-Type": "application/json" },
     }
   );
+  return response.data.messages[0].id;
 };
+
+const markAsRead = async (phone_number_id, message_id) => {
+  await axios.post(
+    `https://graph.facebook.com/v18.0/${phone_number_id}/messages`,
+    {
+      messaging_product: "whatsapp",
+      status: "read",
+      message_id: message_id,
+    },
+    {
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+    }
+  );
+};
+
 
 app.post("/webhook", async (req, res) => {
     try {
@@ -76,6 +95,8 @@ app.post("/webhook", async (req, res) => {
             const audio_id = audio && audio.id;
 
             if(phone_number_id && from && audio_id) {
+                await markAsRead(phone_number_id, messages.id);
+              
                 const audio_url = await getAudioUrl(audio_id);
                 await downloadAudio(audio_url);
 
