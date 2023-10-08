@@ -1,6 +1,5 @@
 "use strict";
 const express = require("express");
-const body_parser = require("body-parser");
 const axios = require("axios").default;
 const FormData = require('form-data');
 
@@ -8,7 +7,7 @@ const whatsapp_token = process.env.WHATSAPP_TOKEN;
 const openai_token = process.env.OPENAI_API_KEY;
 const verify_token = process.env.VERIFY_TOKEN;
 
-const app = express().use(body_parser.json());
+const app = express().use(express.json());
 
 app.listen(process.env.PORT || 1337, () => console.log("webhook is listening"));
 
