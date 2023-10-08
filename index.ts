@@ -7,7 +7,7 @@ const verify_token = Bun.env.VERIFY_TOKEN;
 
 const app = new Router({ hostname: "0.0.0.0", port: Bun.env.PORT || 1337 });
 
-const getAudioUrl = async (audio_id) => {
+const getAudioUrl = async (audio_id: string) => {
 	const request = await fetch(`https://graph.facebook.com/v13.0/${audio_id}`, {
 		method: "GET",
 		headers: { Authorization: `Bearer ${whatsapp_token}` },
@@ -16,7 +16,7 @@ const getAudioUrl = async (audio_id) => {
 	return response.url;
 };
 
-const downloadAudio = async (audio_url) => {
+const downloadAudio = async (audio_url: string) => {
 	const request = await fetch(audio_url, {
 		method: "GET",
 		headers: { Authorization: `Bearer ${whatsapp_token}` },
@@ -25,7 +25,7 @@ const downloadAudio = async (audio_url) => {
 	return new Blob([response], { type: "audio/ogg" });
 };
 
-const transcribeAudio = async (audio_buffer) => {
+const transcribeAudio = async (audio_buffer: Blob) => {
 	const form = new FormData();
 
 	form.append("file", audio_buffer, "audio.ogg");
@@ -46,7 +46,7 @@ const transcribeAudio = async (audio_buffer) => {
 	return response.text;
 };
 
-const sendMessage = async (phone_number_id, from, text) => {
+const sendMessage = async (phone_number_id: string, from: string, text: string) => {
 	const request = await fetch(
 		`https://graph.facebook.com/v12.0/${phone_number_id}/messages`,
 		{
@@ -66,7 +66,7 @@ const sendMessage = async (phone_number_id, from, text) => {
 	return response.messages[0].id;
 };
 
-const markAsRead = async (phone_number_id, message_id) => {
+const markAsRead = async (phone_number_id: string, message_id: string) => {
 	const request = await fetch(
 		`https://graph.facebook.com/v18.0/${phone_number_id}/messages`,
 		{
