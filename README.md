@@ -17,4 +17,4 @@ You need to set 3 environment variables.
 
  - [x] The bot gives you no indication it's working until you either get or don't get a transcript.
  - [x] The code downloads the audio to a file then uploads that file again. It should be possible to do this in memory.
- - [ ] create a docker image
+ - [x] create a docker image
