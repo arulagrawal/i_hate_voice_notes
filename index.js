@@ -83,18 +83,16 @@ const markAsRead = async (phone_number_id, message_id) => {
 
 app.post("/webhook", async (req, res) => {
   try {
-    if (!req.body || !req.body.object) return res.sendStatus(404);
+    if (!req.body?.object) return res.sendStatus(404);
 
-    const entry = req.body.entry;
-    const changes = entry && entry[0] && entry[0].changes;
-    const value = changes && changes[0] && changes[0].value;
-    const messages = value && value.messages && value.messages[0];
+    const changes = req.body?.entry?.[0]?.changes;
+    const value = changes?.[0]?.value;
+    const messages = value?.messages?.[0];
     if (messages) {
       const metadata = value.metadata;
-      const phone_number_id = metadata && metadata.phone_number_id;
+      const phone_number_id = metadata?.phone_number_id;
       const from = messages.from;
-      const audio = messages.audio;
-      const audio_id = audio && audio.id;
+      const audio_id = messages?.audio?.id;
 
       if (phone_number_id && from && audio_id) {
         await markAsRead(phone_number_id, messages.id);
@@ -114,7 +112,6 @@ app.post("/webhook", async (req, res) => {
 });
 
 app.get("/webhook", (req, res) => {
-
   let mode = req.query["hub.mode"];
   let token = req.query["hub.verify_token"];
   let challenge = req.query["hub.challenge"];
