@@ -3,9 +3,12 @@
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
+  "devDependencies": {
+    "@biomejs/biome": "1.2.2",
+    "bun-types": "^1.0.5-canary.20231008T140131"
+  },
   "dependencies": {
-    "axios": "^1.5.1",
-    "express": "^4.18.2",
-    "form-data": "^4.0.0"
+    "@stricjs/router": "^5.0.0",
+    "@stricjs/utils": "^1.5.5"
   }
 }
