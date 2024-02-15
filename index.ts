@@ -66,6 +66,11 @@ const sendMessage = async (phone_number_id: string, from: string, text: string) 
 			},
 		},
 	);
+
+	if (!request.ok) {
+		console.error("An error occurred:", request);
+	}
+
 	const response = await request.json();
 	return response.messages[0].id;
 };
