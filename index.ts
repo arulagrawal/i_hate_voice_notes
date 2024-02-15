@@ -60,7 +60,11 @@ const transcribeAudio = async (audio_buffer: Blob) => {
 	return response.text;
 };
 
-const sendMessage = async (phone_number_id: string, from: string, text: string) => {
+const sendMessage = async (
+	phone_number_id: string,
+	from: string,
+	text: string,
+) => {
 	const request = await fetch(
 		`https://graph.facebook.com/v18.0/${phone_number_id}/messages`,
 		{
@@ -199,9 +203,8 @@ app.get("/webhook", (ctx) => {
 	if (mode && token && mode === "subscribe" && token === verify_token) {
 		console.log("WEBHOOK_VERIFIED");
 		return new Response(challenge.toString(), { status: 200 });
-	} else {
-		return new Response("Invalid Request", { status: 403 });
 	}
+	return new Response("Invalid Request", { status: 403 });
 });
 
 app.listen();
