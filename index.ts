@@ -5,6 +5,16 @@ const whatsapp_token = Bun.env.WHATSAPP_TOKEN;
 const openai_token = Bun.env.OPENAI_API_KEY;
 const verify_token = Bun.env.VERIFY_TOKEN;
 
+if (!whatsapp_token) {
+	throw new Error("WHATSAPP_TOKEN is missing from the environment variables");
+}
+if (!openai_token) {
+	throw new Error("OPENAI_API_KEY is missing from the environment variables");
+}
+if (!verify_token) {
+	throw new Error("VERIFY_TOKEN is missing from the environment variables");
+}
+
 const app = new Router({ hostname: "0.0.0.0", port: Bun.env.PORT || 1337 });
 
 const getAudioUrl = async (audio_id: string) => {
