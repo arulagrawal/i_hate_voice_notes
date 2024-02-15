@@ -1,5 +1,5 @@
-import { Router } from '@stricjs/router';
-import { query } from '@stricjs/utils';
+import { Router } from "@stricjs/router";
+import { query } from "@stricjs/utils";
 
 const whatsapp_token = Bun.env.WHATSAPP_TOKEN;
 const openai_token = Bun.env.OPENAI_API_KEY;
@@ -8,7 +8,7 @@ const verify_token = Bun.env.VERIFY_TOKEN;
 const app = new Router({ hostname: "0.0.0.0", port: Bun.env.PORT || 1337 });
 
 const getAudioUrl = async (audio_id: string) => {
-	const request = await fetch(`https://graph.facebook.com/v13.0/${audio_id}`, {
+	const request = await fetch(`https://graph.facebook.com/v18.0/${audio_id}`, {
 		method: "GET",
 		headers: { Authorization: `Bearer ${whatsapp_token}` },
 	});
@@ -42,13 +42,17 @@ const transcribeAudio = async (audio_buffer: Blob) => {
 		},
 	);
 
+	if (!request.ok) {
+		console.error("An error occurred:", request);
+		return;
+	}
 	const response = await request.json();
 	return response.text;
 };
 
 const sendMessage = async (phone_number_id: string, from: string, text: string) => {
 	const request = await fetch(
-		`https://graph.facebook.com/v12.0/${phone_number_id}/messages`,
+		`https://graph.facebook.com/v18.0/${phone_number_id}/messages`,
 		{
 			method: "POST",
 			body: JSON.stringify({
