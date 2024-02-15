@@ -8,7 +8,7 @@ WORKDIR /usr/src/app
 COPY package.json bun.lockb index.ts ./
 
 # Install the application dependencies using 'yarn install'
-RUN bun install --production --no-cache
+RUN bun install --production --frozen-lockfile --no-cache
 
 # CMD bun index.js
 FROM docker.io/oven/bun:1-distroless as final
