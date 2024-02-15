@@ -1,3 +1,4 @@
 audio.ogg
 node_modules/
 .env
+.direnv/
