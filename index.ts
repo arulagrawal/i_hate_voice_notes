@@ -198,7 +198,7 @@ app.get("/webhook", (ctx) => {
 
 	if (mode && token && mode === "subscribe" && token === verify_token) {
 		console.log("WEBHOOK_VERIFIED");
-		return new Response(challenge, { status: 200 });
+		return new Response(challenge.toString(), { status: 200 });
 	} else {
 		return new Response("Invalid Request", { status: 403 });
 	}
