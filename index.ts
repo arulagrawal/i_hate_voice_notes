@@ -93,35 +93,92 @@ const markAsRead = async (phone_number_id: string, message_id: string) => {
 	);
 };
 
-app.post("/webhook", async (ctx) => {
-	try {
-		if (!ctx.data.object) return new Response("Invalid Request", { status: 400 });
+interface Task {
+	message_id: string;
+	phone_number_id: string;
+	from: string;
+	audio_id: string;
+	transcription?: string;
+}
 
-		const changes = ctx.data.entry?.[0]?.changes;
-		const value = changes?.[0]?.value;
-		const messages = value?.messages?.[0];
-		if (messages) {
-			const metadata = value.metadata;
-			const phone_number_id = metadata?.phone_number_id;
-			const from = messages.from;
-			const audio_id = messages?.audio?.id;
+class Queue {
+	tasks: Task[] = [];
 
-			if (phone_number_id && from && audio_id) {
-				await markAsRead(phone_number_id, messages.id);
+	async addTask(task: Task) {
+		const index = this.tasks.push(task) - 1;
+		console.log("Task added to queue: ", index);
+		console.log("audio id: ", task.audio_id);
+		console.log();
+		await this.getTranscription(task);
+		console.log(`task : ${index}`, task);
+		console.log(`task : ${index} attempting to send message`);
+		await this.attemptSendAll();
+	}
 
-				const audio_url = await getAudioUrl(audio_id);
-				const audio = await downloadAudio(audio_url);
+	async getTranscription(task: Task) {
+		const { phone_number_id, message_id, audio_id } = task;
 
-				const transcription = await transcribeAudio(audio);
-				await sendMessage(phone_number_id, from, transcription);
+		const audio_url = await getAudioUrl(audio_id);
+		const audio = await downloadAudio(audio_url);
+		const transcription = await transcribeAudio(audio);
+		await markAsRead(phone_number_id, message_id);
+
+		task.transcription = transcription;
+	}
+
+	async attemptSendAll() {
+		while (this.tasks.length > 0) {
+			const task = this.tasks[0];
+			if (task) {
+				if (task.transcription) {
+					this.tasks.shift();
+					console.log("sending message with audio id: ", task.audio_id);
+					const { phone_number_id, from, transcription } = task;
+					await sendMessage(phone_number_id, from, transcription);
+				} else {
+					return;
+				}
 			}
 		}
-		return new Response("EVENT_RECEIVED", { status: 200 });
-	} catch (error) {
-		console.error("An error occurred:", error);
-		return new Response("An error occurred", { status: 500 });
 	}
-}, { body: 'json' });
+}
+
+const queue = new Queue();
+
+app.post(
+	"/webhook",
+	async (ctx) => {
+		try {
+			if (!ctx.data.object)
+				return new Response("Invalid Request", { status: 400 });
+
+			const changes = ctx.data.entry?.[0]?.changes;
+			const value = changes?.[0]?.value;
+			const messages = value?.messages?.[0];
+			if (messages) {
+				const metadata = value.metadata;
+				const phone_number_id = metadata?.phone_number_id;
+				const from = messages.from;
+				const audio_id = messages?.audio?.id;
+
+				if (phone_number_id && from && audio_id) {
+					const task = {
+						message_id: messages.id,
+						phone_number_id,
+						from,
+						audio_id,
+					};
+					queue.addTask(task);
+				}
+			}
+			return new Response("EVENT_RECEIVED", { status: 200 });
+		} catch (error) {
+			console.error("An error occurred:", error);
+			return new Response("An error occurred", { status: 500 });
+		}
+	},
+	{ body: "json" },
+);
 
 app.get("/webhook", (ctx) => {
 	const parsed = query(ctx.url.substring(ctx.query + 1));
